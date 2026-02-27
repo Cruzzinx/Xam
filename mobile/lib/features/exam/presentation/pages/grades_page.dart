@@ -236,7 +236,7 @@ class _GradesPageState extends State<GradesPage> with SingleTickerProviderStateM
 
   Widget _buildResultCard(ThemeData theme, dynamic result) {
     final score = (result['score'] ?? 0) as int;
-    final isPassing = score >= 75; // Example passing grade
+    final isPassing = score >= 70; // Set passing grade (KKM) to 70
     final examTitle = result['exam']?['title'] ?? 'Ujian Terhapus';
     
     DateTime? date;
