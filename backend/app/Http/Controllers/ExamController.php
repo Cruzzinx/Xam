@@ -198,7 +198,7 @@ class ExamController extends Controller
         $payload = $request->validate([
             'answers' => 'required|array',
             'answers.*.question_id' => 'required|integer',
-            'answers.*.answer' => 'required',
+            'answers.*.answer' => 'nullable|string',
         ]);
 
         // Calculate score automatically: (Correct / Total) * 100
@@ -211,7 +211,7 @@ class ExamController extends Controller
             if (!$q) continue;
             
             // Compare as strings to avoid type mismatches
-            if ((string) $q->answer === (string) $ans['answer']) {
+            if (isset($ans['answer']) && (string) $q->answer === (string) $ans['answer']) {
                 $correctCount++;
             }
         }
