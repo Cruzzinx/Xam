@@ -312,7 +312,7 @@ class _ExamSessionPageState extends State<ExamSessionPage> {
                                     border: Border.all(color: Colors.orange.withOpacity(0.5)),
                                   ),
                                   child: Text(
-                                    'Pilih lebih dari satu jawaban (Ganda)',
+                                    'Pilih lebih dari satu jawaban',
                                     style: GoogleFonts.inter(
                                       fontSize: 12,
                                       fontWeight: FontWeight.bold,
