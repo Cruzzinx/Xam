@@ -478,7 +478,7 @@ const ManageExams = () => {
                                 </label>
                                 <p className="mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest leading-loose">
                                     Support: CSV, XLS, XLSX<br />
-                                    Format: prompt, option_a, option_b, option_c, option_d, answer
+                                    Format: prompt, option_a, option_b, option_c, option_d, answer, type, file_path, file_type
                                 </p>
                             </div>
                             <div className="flex gap-4">

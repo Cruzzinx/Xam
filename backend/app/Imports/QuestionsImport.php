@@ -37,6 +37,8 @@ class QuestionsImport implements ToModel, WithHeadingRow
         $option_d = $getData(['option_d', 'pilihan_d', 4]);
         $answer   = $getData(['answer', 'jawaban_benar', 5]);
         $type     = $getData(['type', 'tipe_soal', 6]) ?? 'single';
+        $filePath = $getData(['file_path', 'lampiran', 7]);
+        $fileType = $getData(['file_type', 'tipe_lampiran', 8]);
         
         // Normalize type
         if (strtolower($type) === 'ganda' || strtolower($type) === 'multiple') {
@@ -63,12 +65,14 @@ class QuestionsImport implements ToModel, WithHeadingRow
         $finalAnswer = $answer;
 
         return new Question([
-            'exam_id' => $this->examId,
-            'type'    => $type,
-            'prompt'  => $prompt,
-            'options' => $options,
-            'answer'  => $finalAnswer,
-            'score'   => $score,
+            'exam_id'   => $this->examId,
+            'type'      => $type,
+            'prompt'    => $prompt,
+            'options'   => $options,
+            'answer'    => $finalAnswer,
+            'score'     => $score,
+            'file_path' => $filePath,
+            'file_type' => $fileType,
         ]);
     }
 }
