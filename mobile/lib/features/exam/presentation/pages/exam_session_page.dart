@@ -336,7 +336,7 @@ class _ExamSessionPageState extends State<ExamSessionPage> {
                             if (isMultiple && ans is List) {
                               isSelected = ans.contains(optionText); // Use optionText for checking in multiple type
                             } else {
-                              isSelected = ans == optionKey; // Use optionKey for single choice
+                              isSelected = ans == optionText; // Use optionText instead of optionKey !
                             }
                           }
 
@@ -347,7 +347,7 @@ class _ExamSessionPageState extends State<ExamSessionPage> {
                                 if (isMultiple) {
                                   provider.selectAnswer(q['id'], optionText, isMultiple: true);
                                 } else {
-                                  provider.selectAnswer(q['id'], optionKey, isMultiple: false);
+                                  provider.selectAnswer(q['id'], optionText, isMultiple: false);
                                 }
                               },
                               borderRadius: BorderRadius.circular(24),
