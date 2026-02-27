@@ -1,0 +1,27 @@
+﻿Building Windows application...                                 
+C:\src\flutter\bin\flutter.b
+at : LINK : fatal error 
+LNK1168: cannot open C:\User
+s\HENDRI\tenexam\mobile\buil
+d\windows\x64\runner\Debug\m
+obile.exe for writing [C:\Us
+ers\HENDRI\tenexam\mobile\bu
+ild\windows\x64\runner\mobil
+e.vcxproj]
+At line:1 char:1
++ C:\src\flutter\bin\flutter
+.bat build windows --debug 
+2>&1 | Out-File  ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInfo          
+    : NotSpecified: (LINK   
+  : fatal er...mobile.vcx   
+ proj]:String) [], Remot    
+eException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+Building Windows application...                                    25.1s
+Build process failed.
