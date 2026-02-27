@@ -32,6 +32,8 @@ const ManageExams = () => {
         option_c: "",
         option_d: "",
         answer: "A",
+        type: "single",
+        file: null,
     });
 
     const [confirmDelete, setConfirmDelete] = useState({ show: false, id: null, title: "", type: 'exam' });
@@ -161,20 +163,28 @@ const ManageExams = () => {
         e.preventDefault();
         if (!viewQuestions) return;
 
-        const data = {
-            prompt: newQuestion.prompt,
-            options: [newQuestion.option_a, newQuestion.option_b, newQuestion.option_c, newQuestion.option_d],
-            answer: newQuestion.answer,
-        };
+        const formData = new FormData();
+        formData.append("prompt", newQuestion.prompt);
+        formData.append("type", newQuestion.type);
+        formData.append("answer", newQuestion.answer);
+
+        const options = [newQuestion.option_a, newQuestion.option_b, newQuestion.option_c, newQuestion.option_d];
+        options.forEach((opt, index) => {
+            formData.append(`options[${index}]`, opt);
+        });
+
+        if (newQuestion.file) {
+            formData.append("file", newQuestion.file);
+        }
 
         try {
+            const headers = getAuthHeaders();
+            delete headers["Content-Type"]; // Allow browser to set boundary
+
             const response = await fetch(`${API_URL}/admin/exams/${viewQuestions.id}/questions`, {
                 method: "POST",
-                headers: {
-                    ...getAuthHeaders(),
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
+                headers: headers,
+                body: formData
             });
             if (!response.ok) throw new Error("Gagal menambah soal");
 
@@ -187,6 +197,8 @@ const ManageExams = () => {
                 option_c: "",
                 option_d: "",
                 answer: "A",
+                type: "single",
+                file: null,
             });
             fetchExams();
         } catch (err) {
@@ -338,9 +350,30 @@ const ManageExams = () => {
                                                 {idx + 1}
                                             </div>
                                             <div className="ml-4">
-                                                <h4 className="text-lg font-bold text-slate-800 dark:text-white mb-6 leading-relaxed">
+                                                <h4 className="text-lg font-bold text-slate-800 dark:text-white mb-2 leading-relaxed">
                                                     {q.prompt}
                                                 </h4>
+                                                {q.file_path && (
+                                                    <div className="mb-6">
+                                                        <span className="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded-lg text-xs font-bold uppercase tracking-wider">
+                                                            Lampiran: {q.file_type}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {q.type === 'multiple' && !q.file_path && (
+                                                    <div className="mb-6">
+                                                        <span className="inline-block px-3 py-1 bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 rounded-lg text-xs font-bold uppercase tracking-wider">
+                                                            Pilihan Ganda Kompleks
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                {q.type === 'multiple' && q.file_path && (
+                                                    <div className="mb-6 mt-[-1rem]">
+                                                        <span className="inline-block px-3 py-1 bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 rounded-lg text-xs font-bold uppercase tracking-wider">
+                                                            Pilihan Ganda Kompleks
+                                                        </span>
+                                                    </div>
+                                                )}
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     {Array.isArray(q.options) && q.options.map((opt, i) => (
                                                         <div
@@ -476,6 +509,18 @@ const ManageExams = () => {
                     >
                         <form onSubmit={handleAddQuestion} className="space-y-8">
                             <div>
+                                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Tipe Soal</label>
+                                <select
+                                    className="w-full bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-2xl px-6 py-3 outline-none focus:border-indigo-500 font-bold appearance-none cursor-pointer text-slate-900 dark:text-white"
+                                    value={newQuestion.type}
+                                    onChange={(e) => setNewQuestion({ ...newQuestion, type: e.target.value })}
+                                >
+                                    <option value="single">Pilihan Ganda Biasa (1 Jawaban)</option>
+                                    <option value="multiple">Pilihan Ganda Kompleks (Lebih dari 1 Jawaban)</option>
+                                </select>
+                            </div>
+
+                            <div>
                                 <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Pertanyaan / Soal</label>
                                 <textarea
                                     className="w-full bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-2xl px-6 py-4 outline-none focus:border-indigo-500 dark:focus:border-indigo-400 font-bold min-h-[120px] text-slate-900 dark:text-white transition-colors"
@@ -484,6 +529,17 @@ const ManageExams = () => {
                                     required
                                     placeholder="Ketikkan isi soal di sini..."
                                 />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Lampiran Media (Opsional)</label>
+                                <input
+                                    type="file"
+                                    accept="image/*,audio/*,video/*"
+                                    onChange={(e) => setNewQuestion({ ...newQuestion, file: e.target.files[0] })}
+                                    className="block w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-all cursor-pointer bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-2xl p-2 outline-none"
+                                />
+                                <p className="text-xs text-slate-400 mt-2 ml-1">Support: JPG, PNG, MP3, MP4 (Maks. 20MB)</p>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

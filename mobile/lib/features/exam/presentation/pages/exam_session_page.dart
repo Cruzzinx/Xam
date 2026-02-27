@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import '../providers/exam_provider.dart';
+import '../widgets/media_viewer.dart';
 
 class ExamSessionPage extends StatefulWidget {
   final int examId;
@@ -302,6 +303,13 @@ class _ExamSessionPageState extends State<ExamSessionPage> {
                                   height: 1.5,
                                 ),
                               ),
+                              if (q['file_path'] != null) ...[
+                                const Gap(16),
+                                MediaViewer(
+                                  filePath: q['file_path'],
+                                  fileType: q['file_type'] ?? 'unknown',
+                                ),
+                              ],
                               if (q['type'] == 'multiple') ...[
                                 const Gap(12),
                                 Container(

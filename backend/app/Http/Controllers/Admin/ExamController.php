@@ -8,6 +8,7 @@ use App\Models\Question;
 use App\Imports\QuestionsImport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use OpenApi\Attributes as OA;
 
 class ExamController extends Controller
@@ -159,11 +160,26 @@ class ExamController extends Controller
             'prompt' => 'required|string',
             'options' => 'required|array',
             'answer' => 'required|string',
+            'file' => 'nullable|file|mimes:jpeg,png,jpg,gif,mp3,wav,mp4,mov,avi', // Allow up to some reasonable limit natively
         ]);
         
         $data['score'] = 0;
         if (!isset($data['type'])) {
             $data['type'] = 'single';
+        }
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $path = $file->store('questions', 'public');
+            
+            $mime = $file->getMimeType();
+            $fileType = 'unknown';
+            if (str_starts_with($mime, 'image/')) $fileType = 'image';
+            elseif (str_starts_with($mime, 'audio/')) $fileType = 'audio';
+            elseif (str_starts_with($mime, 'video/')) $fileType = 'video';
+            
+            $data['file_path'] = '/storage/' . $path;
+            $data['file_type'] = $fileType;
         }
 
         $question = $exam->questions()->create($data);
@@ -199,7 +215,28 @@ class ExamController extends Controller
             'prompt' => 'sometimes|string',
             'options' => 'sometimes|array',
             'answer' => 'sometimes|string',
+            'file' => 'nullable|file|mimes:jpeg,png,jpg,gif,mp3,wav,mp4,mov,avi',
         ]);
+
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            $path = $file->store('questions', 'public');
+            
+            $mime = $file->getMimeType();
+            $fileType = 'unknown';
+            if (str_starts_with($mime, 'image/')) $fileType = 'image';
+            elseif (str_starts_with($mime, 'audio/')) $fileType = 'audio';
+            elseif (str_starts_with($mime, 'video/')) $fileType = 'video';
+            
+            $data['file_path'] = '/storage/' . $path;
+            $data['file_type'] = $fileType;
+            
+            // Delete old file if exists
+            if ($question->file_path) {
+                $oldPath = str_replace('/storage/', '', $question->file_path);
+                Storage::disk('public')->delete($oldPath);
+            }
+        }
 
         $question->update($data);
         return response()->json($question);

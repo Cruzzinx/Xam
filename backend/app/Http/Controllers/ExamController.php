@@ -77,6 +77,8 @@ class ExamController extends Controller
             return [
                 'id' => $q->id,
                 'type' => $q->type,
+                'file_path' => $q->file_path,
+                'file_type' => $q->file_type,
                 'prompt' => $q->prompt,
                 'options' => $options,
                 'score' => $q->score,
