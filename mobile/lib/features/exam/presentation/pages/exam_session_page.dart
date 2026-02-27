@@ -62,13 +62,27 @@ class _ExamSessionPageState extends State<ExamSessionPage> {
   }
 
   Future<void> _submitExam({bool isAuto = false}) async {
+    final provider = context.read<ExamProvider>();
+    
     if (!isAuto) {
+      // Check for unanswered questions
+      final unansweredCount = provider.questions.length - provider.selectedAnswers.length;
+      if (unansweredCount > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ada $unansweredCount soal yang belum dijawab! Harap diisi semua.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          )
+        );
+        return;
+      }
+
       final confirm = await _showConfirmDialog();
       if (confirm != true) return;
     }
 
     if (!mounted) return;
-    final provider = context.read<ExamProvider>();
     final result = await provider.submitExam(widget.examId);
 
     if (result != null && mounted) {
