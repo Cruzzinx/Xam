@@ -68,4 +68,18 @@ class UserController extends Controller
             'user' => $user->fresh()
         ]);
     }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv|max:5120',
+        ]);
+
+        try {
+            \Maatwebsite\Excel\Facades\Excel::import(new \App\Imports\UsersImport, $request->file('file'));
+            return response()->json(['message' => 'Data siswa berhasil diimport'], 200);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error import data: ' . $e->getMessage()], 500);
+        }
+    }
 }

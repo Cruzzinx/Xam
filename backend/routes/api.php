@@ -65,6 +65,7 @@ Route::middleware('auth:sanctum')->group(function () {
         
         // User Management
         Route::post('/users', [UserController::class, 'store']);
+        Route::post('/users/import', [UserController::class, 'import']);
         
         // Mapel Management
         Route::get('/mapel/{kelas_id}', [MapelController::class, 'index']);

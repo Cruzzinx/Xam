@@ -117,9 +117,11 @@ class KelasController extends Controller
                 return response()->json(['message' => 'Kelas tidak ditemukan'], 404);
             }
     
+            // Delete associated users in this class first
+            $kelas->users()->delete();
             $kelas->delete();
     
-            return response()->json(['message' => 'Kelas berhasil dihapus']);
+            return response()->json(['message' => 'Kelas dan seluruh datanya berhasil dihapus']);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Gagal menghapus kelas karena masih ada data terkait',

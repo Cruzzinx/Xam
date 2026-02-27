@@ -64,11 +64,20 @@ class ExamController extends Controller
     )]
     public function show(Exam $exam)
     {
-        $questions = $exam->questions()->get()->map(function($q){
+        $questions = $exam->questions()->inRandomOrder()->get()->map(function($q){
+            $options = $q->options;
+            
+            // Handle cases where options is null or not an array
+            if (is_array($options)) {
+                shuffle($options);
+            } else {
+                $options = [];
+            }
+
             return [
                 'id' => $q->id,
                 'prompt' => $q->prompt,
-                'options' => $q->options,
+                'options' => $options,
                 'score' => $q->score,
             ];
         });

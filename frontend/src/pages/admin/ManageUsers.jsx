@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Sidebar from "../../components/Sidebar";
 import { useAuth } from "../../context/AuthContext";
 import LoadingSpinner from "../../components/LoadingSpinner";
@@ -139,6 +139,7 @@ const ManageUsers = () => {
     };
 
     const [showUserModal, setShowUserModal] = useState(false);
+    const fileInputRef = useRef(null);
     const [newUser, setNewUser] = useState({
         name: "",
         username: "",
@@ -174,6 +175,42 @@ const ManageUsers = () => {
         }
     };
 
+    const handleImportExcel = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        setLoading(true);
+        try {
+            const headers = getAuthHeaders();
+            delete headers['Content-Type']; // Let browser set multipart/form-data boundary
+
+            const response = await fetch(`${API_URL}/admin/users/import`, {
+                method: "POST",
+                headers: headers,
+                body: formData
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || "Gagal import siswa");
+            }
+
+            toast.success("Data siswa berhasil diimport!");
+            fetchKelas(); // Refresh list & counts
+        } catch (err) {
+            toast.error(err.message);
+            setLoading(false);
+        }
+
+        // Reset file input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+
     if (loading) return <LoadingSpinner message="Mengorganisir data kelas..." />;
 
     return (
@@ -189,12 +226,27 @@ const ManageUsers = () => {
                             </h1>
                             <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg font-medium italic">Manajemen data kelas dan statistik siswa.</p>
                         </div>
-                        <button
-                            onClick={() => setShowUserModal(true)}
-                            className="bg-emerald-500 text-white px-6 py-3 rounded-2xl font-bold shadow-xl shadow-emerald-100 dark:shadow-none hover:bg-emerald-600 active:scale-95 transition-all flex items-center gap-2"
-                        >
-                            <span>➕</span> Tambah Siswa
-                        </button>
+                        <div className="flex gap-4 items-center">
+                            <input
+                                type="file"
+                                accept=".xlsx,.xls,.csv"
+                                className="hidden"
+                                ref={fileInputRef}
+                                onChange={handleImportExcel}
+                            />
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold shadow-xl shadow-blue-100 dark:shadow-none hover:bg-blue-700 active:scale-95 transition-all flex items-center gap-2"
+                            >
+                                <span>📄</span> Import Excel
+                            </button>
+                            <button
+                                onClick={() => setShowUserModal(true)}
+                                className="bg-emerald-500 text-white px-6 py-3 rounded-2xl font-bold shadow-xl shadow-emerald-100 dark:shadow-none hover:bg-emerald-600 active:scale-95 transition-all flex items-center gap-2"
+                            >
+                                <span>➕</span> Tambah Siswa
+                            </button>
+                        </div>
                     </div>
 
                     {error && (
@@ -441,7 +493,7 @@ const ManageUsers = () => {
                 onClose={() => setConfirmDelete({ show: false, id: null, title: "" })}
                 onConfirm={confirmDeleteKelas}
                 title="Hapus Kelas?"
-                message={`Apakah Anda yakin ingin menghapus kelas "${confirmDelete.title}"? Semua data siswa akan kehilangan referensi kelas ini.`}
+                message={`Apakah Anda yakin ingin menghapus kelas "${confirmDelete.title}"? Seluruh data siswa yang berada di dalam kelas ini juga akan ikut TERHAPUS permanen.`}
             />
         </div>
     );
