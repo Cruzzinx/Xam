@@ -68,12 +68,34 @@ class _ExamSessionPageState extends State<ExamSessionPage> {
       // Check for unanswered questions
       final unansweredCount = provider.questions.length - provider.selectedAnswers.length;
       if (unansweredCount > 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ada $unansweredCount soal yang belum dijawab! Harap diisi semua.'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          )
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: const Color(0xFF1E293B),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 28),
+                const Gap(8),
+                Text('Soal Belum Lengkap', style: GoogleFonts.inter(fontWeight: FontWeight.w900, color: Colors.white, fontSize: 18)),
+              ],
+            ),
+            content: Text(
+              'Terdapat $unansweredCount soal yang belum dijawab. Pindahkan ke halaman soal yang kosong dan jawablah sebelum mengumpulkan ujian.',
+              style: GoogleFonts.inter(color: Colors.white70, fontSize: 14),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Lengkapi Sekarang', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
         );
         return;
       }
