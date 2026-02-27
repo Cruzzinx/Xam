@@ -76,6 +76,7 @@ class ExamController extends Controller
 
             return [
                 'id' => $q->id,
+                'type' => $q->type,
                 'prompt' => $q->prompt,
                 'options' => $options,
                 'score' => $q->score,
@@ -210,9 +211,23 @@ class ExamController extends Controller
             $q = $questions->find($ans['question_id']);
             if (!$q) continue;
             
-            // Compare as strings to avoid type mismatches
-            if (isset($ans['answer']) && (string) $q->answer === (string) $ans['answer']) {
-                $correctCount++;
+            if (!isset($ans['answer'])) continue;
+
+            if ($q->type === 'multiple') {
+                $userAnsArray = array_map('trim', explode(',', (string) $ans['answer']));
+                $correctAnsArray = array_map('trim', explode(',', (string) $q->answer));
+                
+                sort($userAnsArray);
+                sort($correctAnsArray);
+                
+                if ($userAnsArray === $correctAnsArray) {
+                    $correctCount++;
+                }
+            } else {
+                // Compare as strings to avoid type mismatches for single choice
+                if ((string) $q->answer === (string) $ans['answer']) {
+                    $correctCount++;
+                }
             }
         }
 

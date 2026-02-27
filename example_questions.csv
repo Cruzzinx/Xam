@@ -1,0 +1,11 @@
+soal,pilihan_a,pilihan_b,pilihan_c,pilihan_d,jawaban_benar,tipe_soal
+Siapakah Presiden pertama Indonesia?,Soeharto,Soekarno,B.J. Habibie,Gus Dur,Soekarno,single
+Manakah dari berikut ini yang merupakan ibu kota Jepang?,Seoul,Beijing,Tokyo,Bangkok,Tokyo,single
+Apa warna bendera Indonesia secara urut dari atas ke bawah?,Putih Merah,Biru Putih,Merah Putih,Kuning Merah,Merah Putih,single
+Berapakah hasil dari 5 + 5?,8,9,10,11,10,single
+Hewan apa yang bisa terbang?,Ayam,Kucing,Burung Elang,Sapi,Burung Elang,single
+Manakah dari nama berikut yang merupakan planet di tata surya kita?,Bumi,Bulan,Mars,Pluto,"Bumi,Mars",multiple
+Apa saja bahasa pemrograman yang sering digunakan untuk Web Development?,Python,HTML/CSS,JavaScript,Photoshop,"HTML/CSS,JavaScript",multiple
+Manakah yang masuk ke dalam kategori buah-buahan?,Apel,Wortel,Jeruk,Bayam,"Apel,Jeruk",multiple
+Siapa saja tokoh pahlawan yang berasal dari Indonesia?,Pangeran Diponegoro,George Washington,Cut Nyak Dien,Abraham Lincoln,"Pangeran Diponegoro,Cut Nyak Dien",multiple
+Pilih warna yang termasuk warna primer?,Merah,Hijau,Kuning,Coklat,"Merah,Kuning",multiple

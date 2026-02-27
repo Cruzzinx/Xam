@@ -36,22 +36,38 @@ class QuestionsImport implements ToModel, WithHeadingRow
         $option_c = $getData(['option_c', 'pilihan_c', 3]);
         $option_d = $getData(['option_d', 'pilihan_d', 4]);
         $answer   = $getData(['answer', 'jawaban_benar', 5]);
-        $answer   = $getData(['answer', 'jawaban_benar', 5]);
+        $type     = $getData(['type', 'tipe_soal', 6]) ?? 'single';
+        
+        // Normalize type
+        if (strtolower($type) === 'ganda' || strtolower($type) === 'multiple') {
+            $type = 'multiple';
+        } else {
+            $type = 'single';
+        }
+
         // Score is now calculated automatically (100 / total_questions), so we set a default placeholder
         $score    = 0; 
-
+        
         if (!$prompt) {
             \Log::warning('Skipping row - Prompt empty:', $row);
             return null;
         }
 
-        $options = [$option_a, $option_b, $option_c, $option_d];
+        $options = array_filter(array_map('trim', [$option_a, $option_b, $option_c, $option_d]), 'strlen');
+        // Ensure keys are reset for JSON array
+        $options = array_values($options);
+
+        // Map answer letters (A, B, C, D) to their corresponding texts if needed
+        // but since answer could be text or A,B,C,D in CSV, better parse it carefully.
+        // If users provide A,C mapping to $option_a, $option_c
+        $finalAnswer = $answer;
 
         return new Question([
             'exam_id' => $this->examId,
+            'type'    => $type,
             'prompt'  => $prompt,
             'options' => $options,
-            'answer'  => $answer,
+            'answer'  => $finalAnswer,
             'score'   => $score,
         ]);
     }

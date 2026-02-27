@@ -31,8 +31,8 @@ class ExamProvider extends ChangeNotifier {
   List<dynamic> _questions = [];
   List<dynamic> get questions => _questions;
 
-  Map<int, String> _selectedAnswers = {};
-  Map<int, String> get selectedAnswers => _selectedAnswers;
+  Map<int, dynamic> _selectedAnswers = {};
+  Map<int, dynamic> get selectedAnswers => _selectedAnswers;
 
   bool _isSubmitting = false;
   bool get isSubmitting => _isSubmitting;
@@ -95,8 +95,24 @@ class ExamProvider extends ChangeNotifier {
     return false;
   }
 
-  void selectAnswer(int questionId, String option) {
-    _selectedAnswers[questionId] = option;
+  void selectAnswer(int questionId, String optionText, {bool isMultiple = false}) {
+    if (isMultiple) {
+      if (!_selectedAnswers.containsKey(questionId)) {
+        _selectedAnswers[questionId] = <String>[];
+      }
+      
+      final currentList = _selectedAnswers[questionId] as List<String>;
+      if (currentList.contains(optionText)) {
+        currentList.remove(optionText);
+        if (currentList.isEmpty) {
+          _selectedAnswers.remove(questionId);
+        }
+      } else {
+        currentList.add(optionText);
+      }
+    } else {
+      _selectedAnswers[questionId] = optionText;
+    }
     notifyListeners();
   }
 
@@ -106,9 +122,20 @@ class ExamProvider extends ChangeNotifier {
 
     try {
       final payload = {
-        'answers': _questions.map((q) => {
-          'question_id': q['id'],
-          'answer': _selectedAnswers[q['id']] ?? ""
+        'answers': _questions.map((q) {
+          final ans = _selectedAnswers[q['id']];
+          String answerString = '';
+          if (ans != null) {
+            if (ans is List) {
+              answerString = ans.join(',');
+            } else {
+              answerString = ans.toString();
+            }
+          }
+          return {
+            'question_id': q['id'],
+            'answer': answerString
+          };
         }).toList()
       };
 

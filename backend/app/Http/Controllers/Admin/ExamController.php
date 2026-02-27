@@ -155,12 +155,16 @@ class ExamController extends Controller
     public function addQuestion(Request $request, Exam $exam)
     {
         $data = $request->validate([
+            'type' => 'nullable|string',
             'prompt' => 'required|string',
             'options' => 'required|array',
             'answer' => 'required|string',
         ]);
         
         $data['score'] = 0;
+        if (!isset($data['type'])) {
+            $data['type'] = 'single';
+        }
 
         $question = $exam->questions()->create($data);
         return response()->json($question, 201);
@@ -191,6 +195,7 @@ class ExamController extends Controller
     public function updateQuestion(Request $request, Exam $exam, Question $question)
     {
         $data = $request->validate([
+            'type' => 'sometimes|string',
             'prompt' => 'sometimes|string',
             'options' => 'sometimes|array',
             'answer' => 'sometimes|string',

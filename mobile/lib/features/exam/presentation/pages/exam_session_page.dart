@@ -290,26 +290,66 @@ class _ExamSessionPageState extends State<ExamSessionPage> {
                             borderRadius: BorderRadius.circular(32),
                             border: Border.all(color: Colors.white.withOpacity(0.05)),
                           ),
-                          child: Text(
-                            q['prompt'] ?? '',
-                            style: GoogleFonts.inter(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              height: 1.5,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                q['prompt'] ?? '',
+                                style: GoogleFonts.inter(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  height: 1.5,
+                                ),
+                              ),
+                              if (q['type'] == 'multiple') ...[
+                                const Gap(12),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.orange.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                                  ),
+                                  child: Text(
+                                    'Pilih lebih dari satu jawaban (Ganda)',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange,
+                                    ),
+                                  ),
+                                ),
+                              ]
+                            ],
                           ),
                         ),
                         const Gap(40),
                         ...List.generate((q['options'] as List).length, (optIdx) {
                           final optionKey = String.fromCharCode(65 + optIdx);
                           final optionText = q['options'][optIdx];
-                          final isSelected = provider.selectedAnswers[q['id']] == optionKey;
+                          final isMultiple = q['type'] == 'multiple';
+                          
+                          bool isSelected = false;
+                          final ans = provider.selectedAnswers[q['id']];
+                          if (ans != null) {
+                            if (isMultiple && ans is List) {
+                              isSelected = ans.contains(optionText); // Use optionText for checking in multiple type
+                            } else {
+                              isSelected = ans == optionKey; // Use optionKey for single choice
+                            }
+                          }
 
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 16),
                             child: InkWell(
-                              onTap: () => provider.selectAnswer(q['id'], optionKey),
+                              onTap: () {
+                                if (isMultiple) {
+                                  provider.selectAnswer(q['id'], optionText, isMultiple: true);
+                                } else {
+                                  provider.selectAnswer(q['id'], optionKey, isMultiple: false);
+                                }
+                              },
                               borderRadius: BorderRadius.circular(24),
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 200),
@@ -329,17 +369,19 @@ class _ExamSessionPageState extends State<ExamSessionPage> {
                                       height: 44,
                                       decoration: BoxDecoration(
                                         color: isSelected ? Colors.white.withOpacity(0.2) : Colors.grey.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(14),
+                                        borderRadius: isMultiple ? BorderRadius.circular(8) : BorderRadius.circular(14),
                                       ),
                                       alignment: Alignment.center,
-                                      child: Text(
-                                        optionKey,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w900,
-                                          color: isSelected ? Colors.white : Colors.grey.shade600,
-                                        ),
-                                      ),
+                                      child: isMultiple && isSelected
+                                          ? const Icon(Icons.check, color: Colors.white, size: 24)
+                                          : Text(
+                                              optionKey,
+                                              style: GoogleFonts.inter(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w900,
+                                                color: isSelected ? Colors.white : Colors.grey.shade600,
+                                              ),
+                                            ),
                                     ),
                                     const Gap(20),
                                     Expanded(
