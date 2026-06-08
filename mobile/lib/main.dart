@@ -40,13 +40,13 @@ void main() async {
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
         ChangeNotifierProvider(create: (_) => ExamProvider()),
       ],
-      child: const TenExamApp(),
+      child: const XamApp(),
     ),
   );
 }
 
-class TenExamApp extends StatelessWidget {
-  const TenExamApp({super.key});
+class XamApp extends StatelessWidget {
+  const XamApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +101,7 @@ class TenExamApp extends StatelessWidget {
     );
 
     return MaterialApp.router(
-      title: 'TenExam Mobile',
+      title: 'Xam Mobile',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,

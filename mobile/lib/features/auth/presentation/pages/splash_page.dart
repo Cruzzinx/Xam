@@ -74,7 +74,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
                 ),
                 child: const Center(
                   child: Text(
-                    'T',
+                    'X',
                     style: TextStyle(
                       fontSize: 60,
                       fontWeight: FontWeight.w900,
@@ -86,7 +86,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
             ),
             const Gap(32),
             Text(
-              'TenExam',
+              'Xam',
               style: GoogleFonts.inter(
                 fontSize: 36,
                 fontWeight: FontWeight.w900,

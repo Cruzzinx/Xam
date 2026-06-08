@@ -10,6 +10,7 @@ use App\Http\Controllers\MapelController;
 use App\Http\Controllers\SoalController;
 use App\Http\Controllers\NilaiController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Admin\DataNilaiController;
 
 // =======================
 // AUTH ROUTES (Public)
@@ -64,8 +65,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/kelas/{id}', [KelasController::class, 'destroy']);
         
         // User Management
+        Route::get('/users', [UserController::class, 'index']);
         Route::post('/users', [UserController::class, 'store']);
         Route::post('/users/import', [UserController::class, 'import']);
+        Route::delete('/users/{id}', [UserController::class, 'destroy']);
         
         // Mapel Management
         Route::get('/mapel/{kelas_id}', [MapelController::class, 'index']);
@@ -79,10 +82,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/soal/{id}', [SoalController::class, 'update']);
         Route::delete('/soal/{id}', [SoalController::class, 'destroy']);
         
-        // Nilai Management
+        // Nilai Management (Manual)
         Route::post('/nilai', [NilaiController::class, 'store']);
         Route::get('/nilai/{user_id}', [NilaiController::class, 'show']);
+
+        // Data Nilai Management (Exam Results)
+        Route::get('/data-nilai', [DataNilaiController::class, 'index']);
+        Route::get('/data-nilai/options', [DataNilaiController::class, 'filterOptions']);
     });
+
 });
 
 // =======================

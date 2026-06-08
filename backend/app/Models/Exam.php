@@ -10,11 +10,17 @@ class Exam extends Model
         'title',
         'description',
         'duration_minutes',
+        'kkm',
         'start_at',
-        'end_at'
+        'end_at',
+        'user_id'
     ];
 
-    // --- TAMBAHKAN INI ---
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function questions()
     {
         return $this->hasMany(Question::class);

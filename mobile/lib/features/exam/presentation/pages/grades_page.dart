@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import '../../../exam/presentation/providers/exam_provider.dart';
+import '../../../dashboard/presentation/providers/dashboard_provider.dart';
 
 class GradesPage extends StatefulWidget {
   const GradesPage({super.key});
@@ -12,12 +13,14 @@ class GradesPage extends StatefulWidget {
   State<GradesPage> createState() => _GradesPageState();
 }
 
-class _GradesPageState extends State<GradesPage> with SingleTickerProviderStateMixin {
+class _GradesPageState extends State<GradesPage> with TickerProviderStateMixin {
+  late TabController _tabController;
   late AnimationController _mainController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _mainController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000),
@@ -25,18 +28,76 @@ class _GradesPageState extends State<GradesPage> with SingleTickerProviderStateM
     _mainController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<ExamProvider>().loadResults();
+      if (mounted) {
+        context.read<ExamProvider>().loadResults();
+        context.read<DashboardProvider>().loadDashboardData();
+      }
     });
   }
 
   @override
   void dispose() {
+    _tabController.dispose();
     _mainController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      children: [
+        // Custom Tab Bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+          child: Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                color: const Color(0xFF10B981),
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelColor: Colors.white,
+              unselectedLabelColor: theme.colorScheme.onSurface.withOpacity(0.4),
+              labelStyle: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 13),
+              unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13),
+              tabs: const [
+                Tab(text: 'RIWAYAT'),
+                Tab(text: 'PERINGKAT'),
+              ],
+            ),
+          ),
+        ),
+        
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildHistoryTab(context),
+              _buildLeaderboardTab(context),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHistoryTab(BuildContext context) {
     final theme = Theme.of(context);
     final examProvider = context.watch<ExamProvider>();
 
@@ -49,330 +110,264 @@ class _GradesPageState extends State<GradesPage> with SingleTickerProviderStateM
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            _buildHeader(theme),
-            const Gap(32),
-
-            // Summary Stats Section
+            _buildHeader(theme, 'Hasil Ujian', 'Rangkuman pencapaian Anda'),
+            const Gap(24),
             if (!examProvider.isResultsLoading && examProvider.results.isNotEmpty)
               _buildSummarySection(theme, examProvider),
             
             if (examProvider.isResultsLoading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(60),
-                  child: CircularProgressIndicator(color: Color(0xFF10B981), strokeWidth: 3),
-                ),
-              ),
+              const Center(child: Padding(padding: EdgeInsets.all(60), child: CircularProgressIndicator(color: Color(0xFF10B981), strokeWidth: 3))),
 
             if (examProvider.resultsError != null)
               _buildErrorRow(theme, examProvider.resultsError!),
 
             if (!examProvider.isResultsLoading && examProvider.results.isEmpty && examProvider.resultsError == null)
-              _buildEmptyResults(theme),
+              _buildEmptyResults(theme, 'Belum ada hasil', 'Selesaikan ujian untuk melihat hasil di sini'),
 
-            // Results List
             if (!examProvider.isResultsLoading && examProvider.results.isNotEmpty)
               ...List.generate(examProvider.results.length, (index) {
                 final result = examProvider.results[index];
-                return TweenAnimationBuilder<double>(
-                  duration: Duration(milliseconds: 400 + (index * 100)),
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  builder: (context, value, child) => Opacity(
-                    opacity: value,
-                    child: Transform.translate(
-                      offset: Offset(0, 30 * (1 - value)),
-                      child: child,
-                    ),
-                  ),
-                  child: _buildResultCard(theme, result),
-                );
+                return _buildResultCard(theme, result, index);
               }),
-            const Gap(40),
+            const Gap(100),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
-    return TweenAnimationBuilder<double>(
-      duration: const Duration(milliseconds: 600),
-      tween: Tween(begin: 0.0, end: 1.0),
-      builder: (context, value, child) => Opacity(
-        opacity: value,
-        child: child,
+  Widget _buildLeaderboardTab(BuildContext context) {
+    final theme = Theme.of(context);
+    final dashboardProvider = context.watch<DashboardProvider>();
+
+    return RefreshIndicator(
+      onRefresh: () => dashboardProvider.loadDashboardData(),
+      color: const Color(0xFF10B981),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(theme, 'Leaderboard', 'Peringkat nilai seluruh siswa'),
+            const Gap(24),
+
+            // Exam Selector
+            if (dashboardProvider.examsList.isNotEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: theme.dividerColor.withOpacity(0.05)),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: dashboardProvider.selectedExamId,
+                    isExpanded: true,
+                    icon: const Icon(Icons.expand_more_rounded, color: Color(0xFF10B981)),
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: theme.colorScheme.onSurface),
+                    onChanged: (val) {
+                      if (val != null) dashboardProvider.fetchLeaderboard(val);
+                    },
+                    items: dashboardProvider.examsList.map((exam) {
+                      return DropdownMenuItem<String>(
+                        value: exam['id'].toString(),
+                        child: Text(exam['title']),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            
+            const Gap(24),
+            
+            if (dashboardProvider.isLeaderboardLoading)
+              const Center(child: CircularProgressIndicator(color: Color(0xFF10B981))),
+
+            if (!dashboardProvider.isLeaderboardLoading && dashboardProvider.leaderboard.isEmpty)
+              _buildEmptyResults(theme, 'Tidak ada data', 'Belum ada siswa yang menyelesaikan ujian ini'),
+
+            if (!dashboardProvider.isLeaderboardLoading && dashboardProvider.leaderboard.isNotEmpty)
+              ...List.generate(dashboardProvider.leaderboard.length, (index) {
+                final entry = dashboardProvider.leaderboard[index];
+                return _buildLeaderboardCard(theme, entry, index);
+              }),
+            const Gap(100),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(ThemeData theme, String title, String subtitle) {
+    return Row(
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF059669), Color(0xFF10B981)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Center(child: Text(title.contains('Hasil') ? '📊' : '🏆', style: const TextStyle(fontSize: 22))),
+        ),
+        const Gap(16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface, letterSpacing: -0.5)),
+              Text(subtitle, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface.withOpacity(0.4))),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummarySection(ThemeData theme, ExamProvider provider) {
+    return Row(
+      children: [
+        Expanded(child: _buildSummaryCard(theme, '🏆', 'Rata-rata', provider.averageScore.toStringAsFixed(1), isPrimary: false)),
+        const Gap(12),
+        Expanded(child: _buildSummaryCard(theme, '📝', 'Total', provider.results.length.toString(), isPrimary: true)),
+        const Gap(12),
+        Expanded(child: _buildSummaryCard(theme, '⭐', 'Tertinggi', provider.highestScore.toString(), isPrimary: false, valueColor: Colors.green.shade600)),
+      ],
+    );
+  }
+
+  Widget _buildSummaryCard(ThemeData theme, String emoji, String label, String value, {bool isPrimary = false, Color? valueColor}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+      decoration: BoxDecoration(
+        color: isPrimary ? const Color(0xFF10B981) : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: isPrimary ? const Color(0xFF10B981).withOpacity(0.3) : Colors.black.withOpacity(0.04), blurRadius: 20, offset: const Offset(0, 10))],
+      ),
+      child: Column(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 20)),
+          const Gap(8),
+          Text(label.toUpperCase(), style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.w900, color: isPrimary ? Colors.white70 : theme.colorScheme.onSurface.withOpacity(0.3), letterSpacing: 1.2)),
+          const Gap(4),
+          Text(value, style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w900, color: isPrimary ? Colors.white : valueColor ?? theme.colorScheme.onSurface)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultCard(ThemeData theme, dynamic result, int index) {
+    final score = (result['score'] ?? 0) as int;
+    final isPassing = score >= 70;
+    final examTitle = result['exam']?['title'] ?? 'Ujian Terhapus';
+    final dateStr = result['submitted_at'] != null ? result['submitted_at'].toString().split(' ')[0] : '-';
+
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Row(
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 54, height: 54,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF059669), Color(0xFF10B981)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: (isPassing ? Colors.green : Colors.red).withOpacity(0.08),
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF10B981).withOpacity(0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+              border: Border.all(color: (isPassing ? Colors.green : Colors.red).withOpacity(0.2), width: 1.5),
             ),
-            child: const Center(child: Text('📊', style: TextStyle(fontSize: 26))),
+            child: Center(child: Text(score.toString(), style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w900, color: isPassing ? Colors.green.shade700 : Colors.red.shade700))),
           ),
           const Gap(16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Hasil Ujian',
-                  style: GoogleFonts.inter(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    color: theme.colorScheme.onSurface,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                Text(
-                  'Rangkuman pencapaian Anda',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface.withOpacity(0.4),
-                  ),
-                ),
+                Text(examTitle, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface)),
+                const Gap(4),
+                Text(dateStr, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: theme.colorScheme.onSurface.withOpacity(0.3))),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummarySection(ThemeData theme, ExamProvider provider) {
-    return FadeTransition(
-      opacity: _mainController,
-      child: SlideTransition(
-        position: Tween<Offset>(begin: const Offset(0.1, 0), end: Offset.zero).animate(_mainController),
-        child: Row(
-          children: [
-            Expanded(child: _buildSummaryCard(
-              theme, '🏆', 'Rata-rata',
-              provider.averageScore.toStringAsFixed(1),
-              isPrimary: false,
-            )),
-            const Gap(12),
-            Expanded(child: _buildSummaryCard(
-              theme, '📝', 'Total',
-              provider.results.length.toString(),
-              isPrimary: true,
-            )),
-            const Gap(12),
-            Expanded(child: _buildSummaryCard(
-              theme, '⭐', 'Tertinggi',
-              provider.highestScore.toString(),
-              isPrimary: false,
-              valueColor: Colors.green.shade600,
-            )),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSummaryCard(ThemeData theme, String emoji, String label, String value, {bool isPrimary = false, Color? valueColor}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
-      decoration: BoxDecoration(
-        color: isPrimary ? const Color(0xFF10B981) : theme.colorScheme.surface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(40),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isPrimary 
-              ? const Color(0xFF10B981).withOpacity(0.3) 
-              : Colors.black.withOpacity(0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 24)),
-          const Gap(12),
-          Text(
-            label.toUpperCase(),
-            style: GoogleFonts.inter(
-              fontSize: 9,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.5,
-              color: isPrimary ? Colors.white.withOpacity(0.8) : theme.colorScheme.onSurface.withOpacity(0.3),
-            ),
-          ),
-          const Gap(6),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              fontSize: 26,
-              fontWeight: FontWeight.w900,
-              color: isPrimary ? Colors.white : valueColor ?? theme.colorScheme.onSurface,
-            ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(color: (isPassing ? Colors.green : Colors.red).withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+            child: Text(isPassing ? 'LULUS' : 'REMEDIAL', style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w900, color: isPassing ? Colors.green.shade800 : Colors.red.shade800, letterSpacing: 0.5)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildResultCard(ThemeData theme, dynamic result) {
-    final score = (result['score'] ?? 0) as int;
-    final isPassing = score >= 70; // Set passing grade (KKM) to 70
-    final examTitle = result['exam']?['title'] ?? 'Ujian Terhapus';
-    
-    DateTime? date;
-    String dateStr = 'Unknown';
-    try {
-      final submittedAt = result['submitted_at'] ?? result['updated_at'] ?? '';
-      if (submittedAt.isNotEmpty) {
-        date = DateTime.parse(submittedAt);
-        dateStr = '${date.day}/${date.month}/${date.year}';
-      }
-    } catch (_) {}
+  Widget _buildLeaderboardCard(ThemeData theme, dynamic entry, int index) {
+    final bool isMe = false; // logic for isMe can be added if needed
+    final int rank = index + 1;
+    final String name = entry['student_name'] ?? 'Siswa';
+    final int score = entry['score'] ?? 0;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(22),
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: rank <= 3 ? const Color(0xFF10B981).withOpacity(0.2) : theme.dividerColor.withOpacity(0.05)),
       ),
       child: Row(
         children: [
-          // Animated Score Circle
           Container(
-            width: 64,
-            height: 64,
+            width: 40, height: 40,
             decoration: BoxDecoration(
-              color: isPassing 
-                ? Colors.green.withOpacity(0.08) 
-                : Colors.red.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isPassing ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
-                width: 2,
-              ),
+              color: rank == 1 ? Colors.amber.shade100 : rank == 2 ? Colors.blueGrey.shade50 : rank == 3 ? Colors.orange.shade50 : theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
               child: Text(
-                score.toString(),
-                style: GoogleFonts.inter(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  color: isPassing ? Colors.green.shade700 : Colors.red.shade700,
-                ),
+                rank == 1 ? '🥇' : rank == 2 ? '🥈' : rank == 3 ? '🥉' : rank.toString(),
+                style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: rank <= 3 ? 18 : 14, color: theme.colorScheme.onSurface.withOpacity(0.4)),
               ),
             ),
           ),
-          const Gap(20),
-
-          // Info
+          const Gap(16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  examTitle,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: theme.colorScheme.onSurface,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const Gap(6),
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today_rounded, size: 12, color: theme.colorScheme.onSurface.withOpacity(0.3)),
-                    const Gap(6),
-                    Text(
-                      dateStr,
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: theme.colorScheme.onSurface.withOpacity(0.3),
-                      ),
-                    ),
-                  ],
-                ),
+                Text(name, style: GoogleFonts.inter(fontWeight: FontWeight.w900, fontSize: 14, color: theme.colorScheme.onSurface)),
+                Text('@${entry['username']}', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface.withOpacity(0.3))),
               ],
             ),
           ),
-
-          // Status Badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: isPassing ? Colors.green.withOpacity(0.12) : Colors.red.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Text(
-              isPassing ? 'LULUS' : 'REMEDIAL',
-              style: GoogleFonts.inter(
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                color: isPassing ? Colors.green.shade800 : Colors.red.shade800,
-                letterSpacing: 1,
-              ),
-            ),
+          Text(
+            score.toString(),
+            style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w900, color: score >= 70 ? const Color(0xFF10B981) : Colors.redAccent),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildEmptyResults(ThemeData theme) {
+  Widget _buildEmptyResults(ThemeData theme, String title, String subtitle) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(60),
+        padding: const EdgeInsets.all(40),
         child: Column(
           children: [
-            const Text('🏜️', style: TextStyle(fontSize: 60)),
-            const Gap(24),
-            Text(
-              'Belum ada hasil',
-              style: GoogleFonts.inter(
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-            const Gap(8),
-            Text(
-              'Selesaikan ujian untuk melihat hasil di sini',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface.withOpacity(0.4),
-              ),
-            ),
+            const Text('🏜️', style: TextStyle(fontSize: 48)),
+            const Gap(16),
+            Text(title, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface)),
+            const Gap(4),
+            Text(subtitle, textAlign: TextAlign.center, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface.withOpacity(0.4))),
           ],
         ),
       ),
@@ -381,16 +376,10 @@ class _GradesPageState extends State<GradesPage> with SingleTickerProviderStateM
 
   Widget _buildErrorRow(ThemeData theme, String error) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.red.withOpacity(0.1)),
-      ),
-      child: Text(
-        error,
-        style: GoogleFonts.inter(color: Colors.red.shade700, fontWeight: FontWeight.w700),
-      ),
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.red.withOpacity(0.05), borderRadius: BorderRadius.circular(16)),
+      child: Text(error, style: GoogleFonts.inter(color: Colors.red.shade700, fontWeight: FontWeight.w700, fontSize: 12)),
     );
   }
 }

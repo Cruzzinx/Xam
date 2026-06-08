@@ -62,9 +62,29 @@ class ExamController extends Controller
             new OA\Response(response: 404, description: "Exam not found")
         ]
     )]
-    public function show(Exam $exam)
+    public function show(Request $request, Exam $exam)
     {
-        $questions = $exam->questions()->inRandomOrder()->get()->map(function($q){
+        $user = $request->user();
+        
+        // Find the in-progress or latest attempt to use its ID as a stable seed
+        $userExam = UserExam::where('user_id', $user->id)
+            ->where('exam_id', $exam->id)
+            ->latest()
+            ->first();
+
+        $seed = $userExam ? $userExam->id : $user->id;
+
+        // Using orderByRaw for cross-database compatibility (mainly MySQL RAND)
+        $query = $exam->questions();
+        $driver = config('database.default');
+        
+        if ($driver === 'mysql' || $driver === 'sqlite') {
+            $query->orderByRaw($driver === 'mysql' ? "RAND($seed)" : "ABS(RANDOM() % $seed)");
+        } else {
+            $query->inRandomOrder();
+        }
+
+        $questions = $query->get()->map(function($q){
             $options = $q->options;
             
             // Handle cases where options is null or not an array
@@ -196,67 +216,102 @@ class ExamController extends Controller
     )]
     public function submit(Request $request, Exam $exam)
     {
-        $user = $request->user();
-
-        $payload = $request->validate([
-            'answers' => 'required|array',
-            'answers.*.question_id' => 'required|integer',
-            'answers.*.answer' => 'nullable|string',
-        ]);
-
-        // Calculate score automatically: (Correct / Total) * 100
-        $questions = $exam->questions; // Load all questions to avoid N+1 and get total count
-        $totalQuestions = $questions->count();
-        $correctCount = 0;
-
-        foreach ($payload['answers'] as $ans) {
-            $q = $questions->find($ans['question_id']);
-            if (!$q) continue;
-            
-            if (!isset($ans['answer'])) continue;
-
-            if ($q->type === 'multiple') {
-                $userAnsArray = array_map('trim', explode(',', (string) $ans['answer']));
-                $correctAnsArray = array_map('trim', explode(',', (string) $q->answer));
+        try {
+            $user = $request->user();
+    
+            $payload = $request->validate([
+                'answers' => 'required|array',
+                'answers.*.question_id' => 'required|integer',
+                'answers.*.answer' => 'nullable|string',
+            ]);
+    
+            // Calculate score automatically: (Correct / Total) * 100
+            $questions = $exam->questions; // Load all questions to avoid N+1 and get total count
+            $totalQuestions = $questions->count();
+            $correctCount = 0;
+    
+            foreach ($payload['answers'] as $ans) {
+                $q = $questions->find($ans['question_id']);
+                if (!$q) continue;
                 
-                sort($userAnsArray);
-                sort($correctAnsArray);
-                
-                if ($userAnsArray === $correctAnsArray) {
-                    $correctCount++;
-                }
-            } else {
-                // Compare as strings to avoid type mismatches for single choice
-                if ((string) $q->answer === (string) $ans['answer']) {
-                    $correctCount++;
+                if (!isset($ans['answer'])) continue;
+    
+                if ($q->type === 'multiple') {
+                    $userAnsArray = array_map('trim', explode(',', (string) $ans['answer']));
+                    $correctAnsArray = array_map('trim', explode(',', (string) $q->answer));
+                    
+                    sort($userAnsArray);
+                    sort($correctAnsArray);
+                    
+                    if ($userAnsArray === $correctAnsArray) {
+                        $correctCount++;
+                    }
+                } else {
+                    // Compare as strings to avoid type mismatches for single choice
+                    if ((string) $q->answer === (string) $ans['answer']) {
+                        $correctCount++;
+                    }
                 }
             }
-        }
-
-        // Calculate final score (0-100 scale)
-        // If total questions is 0, score is 0 to avoid division by zero
-        $score = $totalQuestions > 0 ? round(($correctCount / $totalQuestions) * 100, 2) : 0;
-
-        // Save or update UserExam
-        $userExam = UserExam::updateOrCreate(
-            [
-                'user_id' => $user->id,
-                'exam_id' => $exam->id,
-                'status' => 'in_progress'
-            ],
-            [
+    
+            // Calculate final score (0-100 scale, rounded to integer)
+            $score = $totalQuestions > 0 ? round(($correctCount / $totalQuestions) * 100, 0) : 0;
+    
+            // Check if this is a remedial attempt
+            // If the user already has a 'completed' or 'sudah_remed' record, this is a remedial
+            $hasPreviousAttempt = UserExam::where('user_id', $user->id)
+                ->where('exam_id', $exam->id)
+                ->whereIn('status', ['completed', 'sudah_remed'])
+                ->exists();
+    
+            $finalStatus = 'completed';
+            if ($hasPreviousAttempt) {
+                $finalStatus = 'sudah_remed';
+                // Cap score at KKM if it exceeds it
+                $kkm = $exam->kkm ?? 70;
+                if ($score > $kkm) {
+                    $score = $kkm;
+                }
+            }
+    
+            // Save or update UserExam (finding the one currently in progress)
+            $userExam = UserExam::where('user_id', $user->id)
+                ->where('exam_id', $exam->id)
+                ->where('status', 'in_progress')
+                ->first();
+    
+            if ($userExam) {
+                $userExam->update([
+                    'score' => $score,
+                    'answers' => $payload['answers'],
+                    'submitted_at' => Carbon::now(),
+                    'status' => $finalStatus,
+                ]);
+            } else {
+                // Fallback: create if none in progress
+                $userExam = UserExam::create([
+                    'user_id' => $user->id,
+                    'exam_id' => $exam->id,
+                    'score' => $score,
+                    'answers' => $payload['answers'],
+                    'submitted_at' => Carbon::now(),
+                    'status' => $finalStatus,
+                ]);
+            }
+    
+            return response()->json([
+                'message' => 'Ujian berhasil dikumpulkan',
                 'score' => $score,
-                'answers' => $payload['answers'],
-                'submitted_at' => Carbon::now(),
-                'status' => 'completed',
-            ]
-        );
-
-        return response()->json([
-            'message' => 'Ujian berhasil dikumpulkan',
-            'score' => $score,
-            'user_exam' => $userExam
-        ]);
+                'status' => $finalStatus,
+                'user_exam' => $userExam
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error("Error submitting exam: " . $e->getMessage());
+            return response()->json([
+                'message' => 'Gagal mengumpulkan ujian',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     #[OA\Get(
@@ -279,8 +334,8 @@ class ExamController extends Controller
         $user = $request->user();
 
         $results = UserExam::where('user_id', $user->id)
-            ->with('exam:id,title,description')
-            ->where('status', 'completed')
+            ->with('exam:id,title,description,kkm')
+            ->whereIn('status', ['completed', 'sudah_remed'])
             ->orderBy('submitted_at', 'desc')
             ->get();
 

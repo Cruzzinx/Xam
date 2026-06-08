@@ -24,7 +24,14 @@ class ExamController extends Controller
     )]
     public function index()
     {
-        return Exam::with('questions')->get();
+        $user = auth()->user();
+        $query = Exam::with('questions');
+        
+        if ($user->role !== 'admin') {
+            $query->where('user_id', $user->id);
+        }
+        
+        return $query->get();
     }
 
     #[OA\Post(
@@ -56,9 +63,12 @@ class ExamController extends Controller
             'title' => 'required|string',
             'description' => 'nullable|string',
             'duration_minutes' => 'required|integer',
+            'kkm' => 'nullable|integer|min:0|max:100',
             'start_at' => 'nullable|date',
             'end_at' => 'nullable|date',
         ]);
+
+        $data['user_id'] = auth()->id();
 
         $exam = Exam::create($data);
         return response()->json($exam, 201);
@@ -77,6 +87,9 @@ class ExamController extends Controller
     )]
     public function show(Exam $exam)
     {
+        if (auth()->user()->role !== 'admin' && $exam->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
         return $exam->load('questions');
     }
 
@@ -104,10 +117,15 @@ class ExamController extends Controller
     )]
     public function update(Request $request, Exam $exam)
     {
+        if (auth()->user()->role !== 'admin' && $exam->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $data = $request->validate([
             'title' => 'sometimes|string',
             'description' => 'sometimes|string',
             'duration_minutes' => 'sometimes|integer',
+            'kkm' => 'sometimes|integer|min:0|max:100',
             'start_at' => 'nullable|date',
             'end_at' => 'nullable|date',
         ]);
@@ -128,6 +146,10 @@ class ExamController extends Controller
     )]
     public function destroy(Exam $exam)
     {
+        if (auth()->user()->role !== 'admin' && $exam->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $exam->delete();
         return response()->json(null, 204);
     }
@@ -155,6 +177,10 @@ class ExamController extends Controller
     )]
     public function addQuestion(Request $request, Exam $exam)
     {
+        if (auth()->user()->role !== 'admin' && $exam->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $data = $request->validate([
             'type' => 'nullable|string',
             'prompt' => 'required|string',
@@ -210,6 +236,10 @@ class ExamController extends Controller
     )]
     public function updateQuestion(Request $request, Exam $exam, Question $question)
     {
+        if (auth()->user()->role !== 'admin' && $exam->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $data = $request->validate([
             'type' => 'sometimes|string',
             'prompt' => 'sometimes|string',
@@ -257,6 +287,10 @@ class ExamController extends Controller
     )]
     public function deleteQuestion(Exam $exam, Question $question)
     {
+        if (auth()->user()->role !== 'admin' && $exam->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $question->delete();
         return response()->json(null, 204);
     }
@@ -283,6 +317,10 @@ class ExamController extends Controller
     )]
     public function importQuestions(Request $request, Exam $exam)
     {
+        if (auth()->user()->role !== 'admin' && $exam->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $request->validate([
             'file' => 'required|mimes:xlsx,xls,csv'
         ]);

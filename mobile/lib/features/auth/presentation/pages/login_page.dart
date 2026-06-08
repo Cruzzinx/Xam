@@ -87,7 +87,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   child: const Center(
                     child: Text(
-                      'T',
+                      'X',
                       style: TextStyle(
                         fontSize: 40,
                         fontWeight: FontWeight.w900,
@@ -101,7 +101,7 @@ class _LoginPageState extends State<LoginPage> {
               
               // 2. Title Section
               Text(
-                'TenExam',
+                'Xam',
                 style: GoogleFonts.inter(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
@@ -207,7 +207,7 @@ class _LoginPageState extends State<LoginPage> {
               
               // Footer
               Text(
-                'TenExam v1.0 • @2026',
+                'Xam v1.0 • @2026',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,

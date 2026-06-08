@@ -26,6 +26,10 @@ const ExamScene = () => {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     useEffect(() => {
+        // Reset question index to 1 whenever starting/resuming exam
+        setCurrentNumber(0);
+        setSelectedAnswers({});
+
         const fetchExamData = async () => {
             try {
                 // First start/get status of the exam

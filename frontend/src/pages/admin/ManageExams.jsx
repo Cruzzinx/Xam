@@ -18,6 +18,7 @@ const ManageExams = () => {
     const [newExam, setNewExam] = useState({
         title: "",
         duration_minutes: 60,
+        kkm: 70,
     });
 
     const [importModal, setImportModal] = useState({ show: false, examId: null });
@@ -35,6 +36,8 @@ const ManageExams = () => {
         type: "single",
         file: null,
     });
+
+    const [selectedAnswers, setSelectedAnswers] = useState(["A"]);
 
     const [confirmDelete, setConfirmDelete] = useState({ show: false, id: null, title: "", type: 'exam' });
 
@@ -84,7 +87,7 @@ const ManageExams = () => {
             });
             if (!response.ok) throw new Error("Gagal membuat ujian");
             setShowModal(false);
-            setNewExam({ title: "", duration_minutes: 60 });
+            setNewExam({ title: "", duration_minutes: 60, kkm: 70 });
             fetchExams();
             toast.success("Ujian berhasil ditambahkan!");
         } catch (err) {
@@ -163,10 +166,20 @@ const ManageExams = () => {
         e.preventDefault();
         if (!viewQuestions) return;
 
+        // Map selected letters to option texts
+        const optionMap = {
+            'A': newQuestion.option_a,
+            'B': newQuestion.option_b,
+            'C': newQuestion.option_c,
+            'D': newQuestion.option_d,
+        };
+
+        const mappedAnswers = selectedAnswers.map(letter => optionMap[letter]).join(',');
+
         const formData = new FormData();
         formData.append("prompt", newQuestion.prompt);
         formData.append("type", newQuestion.type);
-        formData.append("answer", newQuestion.answer);
+        formData.append("answer", mappedAnswers);
 
         const options = [newQuestion.option_a, newQuestion.option_b, newQuestion.option_c, newQuestion.option_d];
         options.forEach((opt, index) => {
@@ -200,6 +213,7 @@ const ManageExams = () => {
                 type: "single",
                 file: null,
             });
+            setSelectedAnswers(["A"]);
             fetchExams();
         } catch (err) {
             toast.error(err.message);
@@ -257,6 +271,7 @@ const ManageExams = () => {
                                     <tr>
                                         <th className="px-8 py-5 text-left text-xs font-black text-indigo-900/40 dark:text-slate-500 uppercase tracking-[0.2em]">Nama Ujian</th>
                                         <th className="px-8 py-5 text-left text-xs font-black text-indigo-900/40 dark:text-slate-500 uppercase tracking-[0.2em]">Durasi</th>
+                                        <th className="px-8 py-5 text-left text-xs font-black text-indigo-900/40 dark:text-slate-500 uppercase tracking-[0.2em]">KKM</th>
                                         <th className="px-8 py-5 text-left text-xs font-black text-indigo-900/40 dark:text-slate-500 uppercase tracking-[0.2em]">Siswa / Soal</th>
                                         <th className="px-8 py-5 text-center text-xs font-black text-indigo-900/40 dark:text-slate-500 uppercase tracking-[0.2em]">Opsi</th>
                                     </tr>
@@ -277,6 +292,11 @@ const ManageExams = () => {
                                                 <td className="px-8 py-6">
                                                     <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 font-semibold">
                                                         <span className="text-indigo-400 dark:text-indigo-300">⏱️</span> {exam.duration_minutes}m
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-6">
+                                                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-black">
+                                                        <span>🎯</span> {exam.kkm || 70}
                                                     </div>
                                                 </td>
                                                 <td className="px-8 py-6">
@@ -349,53 +369,63 @@ const ManageExams = () => {
                                             <div className="absolute -left-3 top-8 bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-black shadow-lg">
                                                 {idx + 1}
                                             </div>
-                                            <div className="ml-4">
+                                            <div className="ml-4 flex-1">
                                                 <h4 className="text-lg font-bold text-slate-800 dark:text-white mb-2 leading-relaxed">
                                                     {q.prompt}
                                                 </h4>
                                                 {q.file_path && (
-                                                    <div className="mb-6">
-                                                        <span className="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded-lg text-xs font-bold uppercase tracking-wider">
+                                                    <div className="mb-4">
+                                                        <span className="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 rounded-lg text-[10px] font-black uppercase tracking-[0.2em]">
                                                             Lampiran: {q.file_type}
                                                         </span>
                                                     </div>
                                                 )}
-                                                {q.type === 'multiple' && !q.file_path && (
-                                                    <div className="mb-6">
-                                                        <span className="inline-block px-3 py-1 bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 rounded-lg text-xs font-bold uppercase tracking-wider">
-                                                            Pilihan Ganda Kompleks
-                                                        </span>
-                                                    </div>
-                                                )}
-                                                {q.type === 'multiple' && q.file_path && (
-                                                    <div className="mb-6 mt-[-1rem]">
-                                                        <span className="inline-block px-3 py-1 bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 rounded-lg text-xs font-bold uppercase tracking-wider">
-                                                            Pilihan Ganda Kompleks
-                                                        </span>
-                                                    </div>
-                                                )}
+                                                <div className="mb-6">
+                                                    <span className={`inline-block px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] ${q.type === 'multiple'
+                                                        ? 'bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400'
+                                                        : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400'
+                                                        }`}>
+                                                        {q.type === 'multiple' ? 'Pilihan Ganda Kompleks' : 'Pilihan Ganda Biasa'}
+                                                    </span>
+                                                </div>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    {Array.isArray(q.options) && q.options.map((opt, i) => (
-                                                        <div
-                                                            key={i}
-                                                            className={`p-4 rounded-2xl border ${q.answer === String.fromCharCode(65 + i) ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800 ring-2 ring-indigo-500/20' : 'border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-700/50'} flex items-center gap-3 transition-all`}
-                                                        >
-                                                            <span className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold ${q.answer === String.fromCharCode(65 + i) ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400 border border-slate-200 dark:bg-slate-600 dark:text-slate-300 dark:border-slate-500'}`}>
-                                                                {String.fromCharCode(65 + i)}
-                                                            </span>
-                                                            <span className={`font-semibold ${q.answer === String.fromCharCode(65 + i) ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-600 dark:text-slate-400'}`}>
-                                                                {opt}
-                                                            </span>
-                                                        </div>
-                                                    ))}
+                                                    {Array.isArray(q.options) && q.options.map((opt, i) => {
+                                                        const isCorrect = q.answer && q.answer.split(',').map(a => a.trim()).includes(opt);
+                                                        return (
+                                                            <div
+                                                                key={i}
+                                                                className={`p-5 rounded-2xl border transition-all duration-300 flex items-center gap-4 ${isCorrect
+                                                                    ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-800 ring-2 ring-indigo-500/20'
+                                                                    : 'border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/20'
+                                                                    }`}
+                                                            >
+                                                                <span className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm transition-all shadow-sm ${isCorrect
+                                                                    ? 'bg-indigo-600 text-white animate-bounce-slow'
+                                                                    : 'bg-white dark:bg-slate-700 text-slate-400 border border-slate-100 dark:border-slate-600'
+                                                                    }`}>
+                                                                    {String.fromCharCode(65 + i)}
+                                                                </span>
+                                                                <span className={`font-bold transition-colors ${isCorrect
+                                                                    ? 'text-indigo-700 dark:text-indigo-300'
+                                                                    : 'text-slate-600 dark:text-slate-400'
+                                                                    }`}>
+                                                                    {opt}
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                                 <div className="mt-8 pt-6 border-t border-slate-50 dark:border-slate-700 flex justify-between items-center">
-                                                    <span className="text-indigo-500 dark:text-indigo-400 font-black tracking-widest text-xs uppercase">Jawaban: {q.answer}</span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                                        <span className="text-slate-400 dark:text-slate-500 font-bold tracking-widest text-[10px] uppercase">KUNCI JAWABAN:</span>
+                                                        <span className="text-emerald-600 dark:text-emerald-400 font-black tracking-tight ml-2">{q.answer}</span>
+                                                    </div>
                                                     <button
                                                         onClick={() => handleDeleteQuestion(q.id)}
-                                                        className="text-rose-500 dark:text-rose-400 font-bold hover:underline"
+                                                        className="px-4 py-2 text-rose-500 dark:text-rose-400 font-black uppercase text-[10px] tracking-widest hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-xl transition-all"
                                                     >
-                                                        Hapus Soal
+                                                        HAPUS SOAL
                                                     </button>
                                                 </div>
                                             </div>
@@ -434,6 +464,19 @@ const ManageExams = () => {
                                     onChange={(e) => setNewExam({ ...newExam, duration_minutes: parseInt(e.target.value) || 0 })}
                                     required
                                 />
+                            </div>
+                            <div className="group">
+                                <label className="block text-sm font-black text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest ml-1">Nilai KKM</label>
+                                <input
+                                    type="number"
+                                    className="w-full bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-2xl px-6 py-4 outline-none focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-600 transition-all text-lg font-bold text-slate-900 dark:text-white"
+                                    value={newExam.kkm}
+                                    onChange={(e) => setNewExam({ ...newExam, kkm: parseInt(e.target.value) || 0 })}
+                                    required
+                                    min="0"
+                                    max="100"
+                                />
+                                <p className="text-[10px] text-slate-400 font-bold mt-2 ml-1 italic">* Nilai remedial otomatis akan dibatasi ke angka ini.</p>
                             </div>
                             <div className="flex gap-4 pt-4">
                                 <button
@@ -558,32 +601,55 @@ const ManageExams = () => {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Jawaban Benar</label>
-                                <select
-                                    className="w-full bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-2xl px-6 py-3 outline-none focus:border-indigo-500 dark:focus:border-indigo-400 font-bold appearance-none cursor-pointer text-slate-900 dark:text-white transition-colors"
-                                    value={newQuestion.answer}
-                                    onChange={(e) => setNewQuestion({ ...newQuestion, answer: e.target.value })}
-                                >
-                                    <option value="A">Pilihan A</option>
-                                    <option value="B">Pilihan B</option>
-                                    <option value="C">Pilihan C</option>
-                                    <option value="D">Pilihan D</option>
-                                </select>
+                                <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 ml-1">Tandai Jawaban Benar</label>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    {['A', 'B', 'C', 'D'].map(letter => {
+                                        const isSelected = selectedAnswers.includes(letter);
+                                        return (
+                                            <button
+                                                key={letter}
+                                                type="button"
+                                                onClick={() => {
+                                                    if (newQuestion.type === 'multiple') {
+                                                        if (isSelected) {
+                                                            setSelectedAnswers(selectedAnswers.filter(l => l !== letter));
+                                                        } else {
+                                                            setSelectedAnswers([...selectedAnswers, letter]);
+                                                        }
+                                                    } else {
+                                                        setSelectedAnswers([letter]);
+                                                    }
+                                                }}
+                                                className={`py-4 rounded-2xl font-black text-lg transition-all border-2 ${isSelected
+                                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-200 dark:shadow-none'
+                                                    : 'bg-slate-50 dark:bg-slate-700 border-slate-100 dark:border-slate-600 text-slate-400 dark:text-slate-500 hover:border-indigo-300'
+                                                    }`}
+                                            >
+                                                PILIHAN {letter}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                {newQuestion.type === 'multiple' && (
+                                    <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest mt-4 ml-1 italic">
+                                        * Anda dapat memilih lebih dari satu jawaban untuk tipe Kompleks.
+                                    </p>
+                                )}
                             </div>
 
                             <div className="flex gap-4 pt-4">
                                 <button
                                     type="button"
                                     onClick={() => setShowQuestionModal(false)}
-                                    className="flex-1 py-4 font-black text-slate-400 hover:text-rose-500 rounded-2xl transition"
+                                    className="flex-1 py-4 font-black text-slate-400 hover:text-rose-500 rounded-2xl transition uppercase tracking-widest text-xs"
                                 >
                                     TUTUP
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-[2] bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-black transition-all"
+                                    className="flex-[2] bg-indigo-600 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-black transition-all uppercase tracking-widest text-xs"
                                 >
-                                    SIMPAN SOAL
+                                    SIMPAN SOAL SEKARANG
                                 </button>
                             </div>
                         </form>

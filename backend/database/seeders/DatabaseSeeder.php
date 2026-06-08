@@ -27,6 +27,15 @@ class DatabaseSeeder extends Seeder
             'role' => 'admin',
         ]);
 
+        // Create Guru User
+        User::create([
+            'name' => 'Bapak Guru',
+            'username' => 'guru',
+            'email' => 'guru@cbt.com',
+            'password' => Hash::make('guru123'),
+            'role' => 'guru',
+        ]);
+
         // Create Sample Kelas
         $kelas10 = Kelas::create(['nama_kelas' => 'Kelas 10']);
         $kelas11 = Kelas::create(['nama_kelas' => 'Kelas 11']);

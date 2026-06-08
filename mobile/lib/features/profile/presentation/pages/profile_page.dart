@@ -169,7 +169,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
               const Gap(40),
               
               Text(
-                'TenExam v1.0 • @2026',
+                'Xam v1.0 • @2026',
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -643,7 +643,7 @@ class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStat
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         title: Text('Logout', style: GoogleFonts.inter(fontWeight: FontWeight.w900)),
-        content: const Text('Apakah Anda yakin ingin keluar dari aplikasi TenExam?'),
+        content: const Text('Apakah Anda yakin ingin keluar dari aplikasi Xam?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),

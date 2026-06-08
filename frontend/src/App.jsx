@@ -14,10 +14,13 @@ import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import Exams from "./pages/exams/Index.jsx";
 import ExamDetailPage from "./pages/exams/Index.jsx";
 import ProfilePage from "./pages/profile/Index.jsx";
-import GradesPage from "./pages/grades/Index.jsx";
+import HistoryPage from "./pages/grades/Index.jsx";
+import Leaderboard from "./pages/grades/Leaderboard.jsx";
 import ExamScene from "./pages/exams/examScene.jsx";
 import ManageUsers from "./pages/admin/ManageUsers.jsx";
+import ManageTeachers from "./pages/admin/ManageTeachers.jsx";
 import ManageExams from "./pages/admin/ManageExams.jsx";
+import DataNilai from "./pages/admin/DataNilai.jsx";
 
 function App() {
   return (
@@ -42,8 +45,17 @@ function App() {
         <Route
           path="/manage-users"
           element={
-            <ProtectedRoute requiredRole={['guru', 'admin']}>
+            <ProtectedRoute requiredRole={['admin']}>
               <ManageUsers />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/manage-teachers"
+          element={
+            <ProtectedRoute requiredRole={['admin']}>
+              <ManageTeachers />
             </ProtectedRoute>
           }
         />
@@ -58,6 +70,15 @@ function App() {
         />
 
         <Route
+          path="/data-nilai"
+          element={
+            <ProtectedRoute requiredRole={['guru', 'admin']}>
+              <DataNilai />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/exams"
           element={
             <ProtectedRoute requiredRole={['siswa', 'guru', 'admin']}>
@@ -67,7 +88,8 @@ function App() {
         />
 
         <Route path="/exams/:subjectId" element={<ExamDetailPage />} />
-        <Route path="/grades" element={<GradesPage />} />
+        <Route path="/grades" element={<HistoryPage />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/profile" element={<ProfilePage />} />
 
       </Routes>

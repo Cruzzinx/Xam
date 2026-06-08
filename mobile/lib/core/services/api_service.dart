@@ -6,7 +6,7 @@ class ApiService {
   static String get baseUrl {
     if (kReleaseMode) {
       // Production URL
-      return 'https://api.tenexam.com/api';
+      return 'https://api.xam.com/api';
     }
     // Android Emulator uses 10.0.2.2 to access host localhost
     if (defaultTargetPlatform == TargetPlatform.android) {

@@ -60,9 +60,27 @@ class QuestionsImport implements ToModel, WithHeadingRow
         $options = array_values($options);
 
         // Map answer letters (A, B, C, D) to their corresponding texts if needed
-        // but since answer could be text or A,B,C,D in CSV, better parse it carefully.
-        // If users provide A,C mapping to $option_a, $option_c
         $finalAnswer = $answer;
+        $optionTexts = [
+            'A' => $option_a,
+            'B' => $option_b,
+            'C' => $option_c,
+            'D' => $option_d,
+        ];
+
+        if ($type === 'multiple') {
+            $ansParts = array_map('trim', explode(',', $answer));
+            $mappedParts = array_map(function($p) use ($optionTexts) {
+                $pUpper = strtoupper($p);
+                return isset($optionTexts[$pUpper]) ? $optionTexts[$pUpper] : $p;
+            }, $ansParts);
+            $finalAnswer = implode(',', $mappedParts);
+        } else {
+            $ansUpper = strtoupper($answer);
+            if (isset($optionTexts[$ansUpper])) {
+                $finalAnswer = $optionTexts[$ansUpper];
+            }
+        }
 
         return new Question([
             'exam_id'   => $this->examId,

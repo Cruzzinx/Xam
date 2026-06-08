@@ -5,17 +5,18 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:mobile/core/services/api_service.dart';
 
 class MediaViewer extends StatefulWidget {
   final String filePath;
   final String fileType;
-  final String baseUrl;
+  final String? baseUrl;
 
   const MediaViewer({
     super.key,
     required this.filePath,
     required this.fileType,
-    this.baseUrl = 'http://10.0.2.2:8000', // Default relative to emulator
+    this.baseUrl,
   });
 
   @override
@@ -36,7 +37,9 @@ class _MediaViewerState extends State<MediaViewer> {
       return widget.filePath;
     }
     // Prepend base URL for relative paths
-    return '${widget.baseUrl}${widget.filePath}';
+    // Remove '/api' from ApiService.baseUrl to get the host root
+    final hostUrl = widget.baseUrl ?? ApiService.baseUrl.replaceAll('/api', '');
+    return '$hostUrl${widget.filePath}';
   }
 
   @override

@@ -35,7 +35,11 @@ class _ExamSessionPageState extends State<ExamSessionPage> {
     final success = await provider.startExam(widget.examId);
     
     if (success && mounted) {
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(0);
+      }
       setState(() {
+        _currentIndex = 0;
         _secondsRemaining = (provider.activeExam['duration_minutes'] ?? 0) * 60;
         _isInitialized = true;
       });
@@ -134,7 +138,10 @@ class _ExamSessionPageState extends State<ExamSessionPage> {
     );
   }
 
-  void _showResultDialog(String score) {
+  void _showResultDialog(String scoreStr) {
+    final double score = double.tryParse(scoreStr) ?? 0.0;
+    final bool isRemedial = score < 70.0;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -145,34 +152,58 @@ class _ExamSessionPageState extends State<ExamSessionPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Gap(16),
-            const Text('🎉', style: TextStyle(fontSize: 64)),
+            Text(isRemedial ? '⚠️' : '🎉', style: const TextStyle(fontSize: 64)),
             const Gap(16),
             Text(
-              'Ujian Selesai!',
-              style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white),
+              isRemedial ? 'Remedial' : 'Ujian Selesai!',
+              style: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w900, color: isRemedial ? Colors.orange : Colors.white),
             ),
             const Gap(8),
             Text(
-              'Skor Anda',
+              isRemedial ? 'Skor Anda belum mencapai KKM (70)' : 'Selamat! Skor Anda',
               style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white54),
+              textAlign: TextAlign.center,
             ),
-            const Gap(4),
+            const Gap(16),
             Text(
-              score,
-              style: GoogleFonts.inter(fontSize: 56, fontWeight: FontWeight.w900, color: AppTheme.primary),
+              scoreStr,
+              style: GoogleFonts.inter(
+                fontSize: 64, 
+                fontWeight: FontWeight.w900, 
+                color: isRemedial ? Colors.orange : AppTheme.primary
+              ),
             ),
             const Gap(32),
+            if (isRemedial) ...[
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx); // Close dialog
+                    _startExamFlow(); // Restart session
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: const Text('MULAI REMEDIAL', style: TextStyle(fontWeight: FontWeight.w900)),
+                ),
+              ),
+              const Gap(12),
+            ],
             SizedBox(
               width: double.infinity,
               height: 56,
-              child: ElevatedButton(
+              child: OutlinedButton(
                 onPressed: () {
                   Navigator.pop(ctx); // Close dialog
                   Navigator.pop(context); // Back to exams list
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
-                  foregroundColor: Colors.white,
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: isRemedial ? Colors.white24 : AppTheme.primary),
+                  foregroundColor: isRemedial ? Colors.white : AppTheme.primary,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
                 child: const Text('KEMBALI KE DAFTAR'),

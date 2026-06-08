@@ -222,9 +222,9 @@ const ManageUsers = () => {
                     <div className="mb-10 flex justify-between items-end">
                         <div>
                             <h1 className="text-4xl font-black text-indigo-950 dark:text-white flex items-center gap-4">
-                                <span>👥</span> Kelola User & Kelas
+                                <span>👥</span> Kelola Siswa & Kelas
                             </h1>
-                            <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg font-medium italic">Manajemen data kelas dan statistik siswa.</p>
+                            <p className="text-slate-500 dark:text-slate-400 mt-2 text-lg font-medium italic">Manajemen data kelas dan basis data siswa.</p>
                         </div>
                         <div className="flex gap-4 items-center">
                             <input
@@ -397,7 +397,7 @@ const ManageUsers = () => {
                 </div>
             </Modal>
 
-            {/* MODAL: TAMBAH SISWA MANUAL */}
+            {/* MODAL: TAMBAH USER MANUAL */}
             <Modal
                 show={showUserModal}
                 onClose={() => setShowUserModal(false)}
@@ -446,7 +446,7 @@ const ManageUsers = () => {
                         <div>
                             <label className="block text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2 ml-1">Password Default</label>
                             <input
-                                type="text"
+                                type="text" // Visible for convenience during manual add
                                 className="w-full bg-slate-50 dark:bg-slate-700 border-2 border-slate-100 dark:border-slate-600 rounded-2xl px-6 py-3 outline-none focus:border-indigo-500 dark:focus:border-indigo-400 font-bold text-slate-900 dark:text-white transition-colors"
                                 value={newUser.password}
                                 onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}

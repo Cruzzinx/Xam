@@ -248,8 +248,51 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
                           ],
                         ),
                       ),
+
+                      // 4. Leaderboard Preview Section (Student)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Gap(32),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '🏆 Top 3 Teratas',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: () => setState(() => _selectedIndex = 2),
+                                  child: Text('LIHAT SEMUA', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w900, color: theme.colorScheme.primary)),
+                                ),
+                              ],
+                            ),
+                            const Gap(12),
+                            if (dashboardProvider.isLeaderboardLoading)
+                              const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+                            else if (dashboardProvider.leaderboard.isEmpty)
+                              _buildEmptyLeaderboard(theme)
+                            else
+                              Column(
+                                children: List.generate(
+                                  dashboardProvider.leaderboard.length > 3 ? 3 : dashboardProvider.leaderboard.length,
+                                  (index) {
+                                    final entry = dashboardProvider.leaderboard[index];
+                                    return _buildMiniLeaderboardItem(theme, entry, index);
+                                  },
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                       
-                      const Gap(100),
+                      const Gap(120),
                     ],
                   ),
                 ),
@@ -510,6 +553,43 @@ class _DashboardPageState extends State<DashboardPage> with SingleTickerProvider
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMiniLeaderboardItem(ThemeData theme, dynamic entry, int index) {
+    final rank = index + 1;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.dividerColor.withOpacity(0.05)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              color: rank == 1 ? Colors.amber.shade100 : rank == 2 ? Colors.blueGrey.shade50 : rank == 3 ? Colors.orange.shade100 : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(child: Text(rank == 1 ? '🥇' : rank == 2 ? '🥈' : rank == 3 ? '🥉' : rank.toString(), style: const TextStyle(fontSize: 16))),
+          ),
+          const Gap(16),
+          Expanded(child: Text(entry['student_name'] ?? 'Siswa', style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13))),
+          Text(entry['score'].toString(), style: GoogleFonts.inter(fontWeight: FontWeight.w900, color: const Color(0xFF10B981))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyLeaderboard(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: theme.colorScheme.surface, borderRadius: BorderRadius.circular(20)),
+      child: Center(child: Text('Belum ada data peringkat', style: GoogleFonts.inter(fontSize: 12, color: theme.colorScheme.onSurface.withOpacity(0.4)))),
     );
   }
 }

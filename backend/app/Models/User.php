@@ -19,6 +19,11 @@ class User extends Authenticatable
         return $this->hasMany(Nilai::class);
     }
 
+    public function kelas()
+    {
+        return $this->belongsTo(Kelas::class, 'kelas_id');
+    }
+
     public function userExams()
     {
         return $this->hasMany(UserExam::class);

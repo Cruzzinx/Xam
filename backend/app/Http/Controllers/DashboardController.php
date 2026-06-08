@@ -26,16 +26,35 @@ class DashboardController extends Controller
 
         if ($user->role === 'admin' || $user->role === 'guru') {
             // Summary Cards
-            $stats = [
-                ['title' => 'Total Ujian', 'count' => Exam::count(), 'icon' => '📝'],
-                ['title' => 'Total Siswa', 'count' => User::where('role', 'siswa')->count(), 'icon' => '👥'],
-                ['title' => 'Total Kelas', 'count' => Kelas::count(), 'icon' => '🏫'],
-            ];
+            if ($user->role === 'admin') {
+                $stats = [
+                    ['title' => 'Total Pengajar', 'count' => User::where('role', 'guru')->count(), 'icon' => '👨‍🏫'],
+                    ['title' => 'Total Siswa', 'count' => User::where('role', 'siswa')->count(), 'icon' => '👥'],
+                    ['title' => 'Total Kelas', 'count' => Kelas::count(), 'icon' => '🏫'],
+                ];
+            } else {
+                $stats = [
+                    ['title' => 'Total Ujian', 'count' => Exam::where('user_id', $user->id)->count(), 'icon' => '📝'],
+                    ['title' => 'Total Siswa', 'count' => User::where('role', 'siswa')->count(), 'icon' => '👥'],
+                    ['title' => 'Total Kelas', 'count' => Kelas::count(), 'icon' => '🏫'],
+                ];
+            }
 
-            // Recent Activities (Latest completed exams)
-            $recent_activities = UserExam::with(['user', 'exam'])
-                ->where('status', 'completed')
-                ->latest('updated_at')
+            // Recent Activities (Latest completed/remedial exams)
+            $latestActivitiesIds = UserExam::selectRaw('MAX(id)')
+                ->whereIn('status', ['completed', 'sudah_remed'])
+                ->groupBy('user_id', 'exam_id');
+
+            $activitiesQuery = UserExam::with(['user', 'exam'])
+                ->whereIn('id', $latestActivitiesIds);
+            
+            if ($user->role === 'guru') {
+                $activitiesQuery->whereHas('exam', function($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                });
+            }
+
+            $recent_activities = $activitiesQuery->latest('updated_at')
                 ->take(5)
                 ->get()
                 ->map(function ($ue) {
@@ -49,9 +68,22 @@ class DashboardController extends Controller
                 });
 
             // Top Students (Based on average score)
-            $top_students = User::where('role', 'siswa')
-                ->withAvg('userExams as average_score', 'score')
-                ->orderByDesc('average_score')
+            $topQuery = User::where('role', 'siswa');
+            
+            if ($user->role === 'guru') {
+                $topQuery->whereHas('userExams.exam', function($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                });
+                $topQuery->withAvg(['userExams' => function($q) use ($user) {
+                    $q->whereHas('exam', function($qe) use ($user) {
+                        $qe->where('user_id', $user->id);
+                    });
+                }], 'score');
+            } else {
+                $topQuery->withAvg('userExams as average_score', 'score');
+            }
+
+            $top_students = $topQuery->orderByDesc('average_score')
                 ->take(5)
                 ->get()
                 ->map(function ($u) {
@@ -59,22 +91,28 @@ class DashboardController extends Controller
                         'id' => $u->id,
                         'name' => $u->name,
                         'username' => $u->username,
-                        'average_score' => round($u->average_score, 1) ?? 0,
+                        'average_score' => round($u->average_score ?? 0, 1),
                         'exams_count' => $u->userExams()->count()
                     ];
                 });
 
         } else {
             // Role Siswa
+            $userCompletedExams = UserExam::where('user_id', $user->id)
+                ->whereIn('status', ['completed', 'sudah_remed'])
+                ->selectRaw('MAX(score) as best_score')
+                ->groupBy('exam_id')
+                ->get();
+
             $stats = [
                 ['title' => 'Ujian Tersedia', 'count' => Exam::count(), 'icon' => '📄'],
-                ['title' => 'Ujian Selesai', 'count' => UserExam::where('user_id', $user->id)->where('status', 'completed')->count(), 'icon' => '✅'],
-                ['title' => 'Rata-rata Skor', 'count' => round(UserExam::where('user_id', $user->id)->avg('score') ?? 0, 1), 'icon' => '⭐'],
+                ['title' => 'Ujian Selesai', 'count' => $userCompletedExams->count(), 'icon' => '✅'],
+                ['title' => 'Rata-rata Skor', 'count' => round($userCompletedExams->avg('best_score') ?? 0, 1), 'icon' => '⭐'],
             ];
 
              // Recent History
              $recent_activities = UserExam::where('user_id', $user->id)
-             ->where('status', 'completed')
+             ->whereIn('status', ['completed', 'sudah_remed'])
              ->with('exam')
              ->latest('updated_at')
              ->take(5)
@@ -99,15 +137,27 @@ class DashboardController extends Controller
 
     public function getExamsList()
     {
-        $exams = Exam::select('id', 'title')->latest()->get();
+        $user = auth()->user();
+        $query = Exam::select('id', 'title');
+        
+        if ($user && $user->role === 'guru') {
+            $query->where('user_id', $user->id);
+        }
+
+        $exams = $query->latest()->get();
         return response()->json($exams);
     }
 
     public function getExamLeaderboard($id)
     {
-        $leaderboard = UserExam::where('exam_id', $id)
-            ->where('status', 'completed')
-            ->with('user:id,name,username,kelas_id') // Optimize query
+        // Leaderboard: Only latest result per student for this exam
+        $latestIds = UserExam::where('exam_id', $id)
+            ->whereIn('status', ['completed', 'sudah_remed'])
+            ->selectRaw('MAX(id)')
+            ->groupBy('user_id');
+
+        $leaderboard = UserExam::whereIn('id', $latestIds)
+            ->with('user:id,name,username,kelas_id')
             ->orderByDesc('score')
             ->orderBy('updated_at') // Tie-breaker: earlier submission
             ->get()

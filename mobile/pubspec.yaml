@@ -1,5 +1,5 @@
 name: mobile
-description: Mobile application for TenExam CBT
+description: Mobile application for Xam CBT
 
 publish_to: 'none' 
 
@@ -26,6 +26,7 @@ dependencies:
   cached_network_image: ^3.4.1
   url_launcher: ^6.3.2
   url_launcher_windows: ^3.1.5
+  video_player_win: ^3.2.2
 
 dev_dependencies:
   flutter_test:

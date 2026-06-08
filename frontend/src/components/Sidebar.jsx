@@ -29,15 +29,26 @@ const Sidebar = () => {
             return [
                 ...baseItems,
                 { name: "Exams", path: "/exams", icon: "📝" },
-                { name: "Grades", path: "/grades", icon: "🏆" },
+                { name: "History", path: "/grades", icon: "🕒" },
+                { name: "Leaderboard", path: "/leaderboard", icon: "🏆" },
                 { name: "Profile", path: "/profile", icon: "👤" },
             ];
         }
 
+        if (role === 'guru') {
+            return [
+                ...baseItems,
+                { name: "Exams", path: "/manage-questions", icon: "📚" },
+                { name: "Grades", path: "/data-nilai", icon: "🏆" },
+                { name: "Profile", path: "/profile", icon: "👤" },
+            ];
+        }
+
+        // Admin Role
         return [
             ...baseItems,
-            { name: "Exams", path: "/manage-questions", icon: "📚" },
-            { name: "Class", path: "/manage-users", icon: "👥" },
+            { name: "Teachers", path: "/manage-teachers", icon: "👨‍🏫" },
+            { name: "Students & Class", path: "/manage-users", icon: "👥" },
             { name: "Profile", path: "/profile", icon: "👤" },
         ];
     };

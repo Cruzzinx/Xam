@@ -8,6 +8,17 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    public function index(Request $request)
+    {
+        $role = $request->query('role');
+        $query = User::query();
+        
+        if ($role) {
+            $query->where('role', $role);
+        }
+        
+        return response()->json($query->get());
+    }
     public function login(Request $request)
     {
         $user = User::where('username', $request->username)->first();
@@ -81,5 +92,22 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return response()->json(['message' => 'Error import data: ' . $e->getMessage()], 500);
         }
+    }
+
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+        
+        // Prevent deleting self
+        if ($user->id === auth()->id()) {
+            return response()->json(['message' => 'Tidak bisa menghapus akun sendiri'], 403);
+        }
+
+        if ($user->profile_photo) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($user->profile_photo);
+        }
+
+        $user->delete();
+        return response()->json(null, 204);
     }
 }

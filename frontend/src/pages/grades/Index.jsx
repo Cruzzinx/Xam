@@ -102,7 +102,8 @@ function GradesPage() {
                                     </tr>
                                 ) : (
                                     results.map((result) => {
-                                        const isPassing = result.score > 70; // Lulus jika di atas 70
+                                        const kkm = result.exam?.kkm || 70;
+                                        const isPassing = result.score >= kkm;
                                         return (
                                             <tr key={result.id} className="hover:bg-indigo-50/20 dark:hover:bg-slate-700/50 transition-colors group">
                                                 <td className="px-8 py-6">
@@ -126,9 +127,9 @@ function GradesPage() {
                                                     </div>
                                                 </td>
                                                 <td className="px-8 py-6 text-center">
-                                                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${isPassing ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800'
+                                                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${result.status === 'sudah_remed' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-800' : isPassing ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800'
                                                         }`}>
-                                                        {isPassing ? 'Lulus' : 'Remedial'}
+                                                        {result.status === 'sudah_remed' ? 'Sudah Remedial' : isPassing ? 'Lulus' : 'Remedial'}
                                                     </span>
                                                 </td>
                                                 <td className="px-8 py-6 text-center">
